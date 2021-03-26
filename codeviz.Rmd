@@ -1,0 +1,396 @@
+---
+title: '_>dataviz with #rstats'
+subtitle: 'from table into canvas'
+author: "Muhammad Aswan Syahputra"
+date: "3/26/2021"
+output:
+  xaringan::moon_reader:
+    seal: false
+    lib_dir: libs
+    self_contained: false
+    css: xaringan-themer.css
+    nature:
+      ratio: "16:9"
+      highlightLanguage: r
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  fig.width = 8, 
+  message = FALSE, 
+  warning = FALSE, 
+  tidy = 'styler',
+  prompt = FALSE,
+  cache = FALSE, 
+  dev = "svg", 
+  fig.ext = "svg",
+  fig.retina = 3,
+  fig.showtext = TRUE
+)
+
+library(flipbookr)
+library(tidyverse)
+library(showtext)
+
+font_add_google("Josefin Sans")
+showtext_auto()
+```
+
+```{r xaringan-themer, include=FALSE}
+library(xaringanthemer)
+
+style_mono_accent(
+  base_color = "#1c5253",
+  header_font_google = google_font("Josefin Sans"),
+  text_font_google   = google_font("Montserrat", "300", "300i"),
+  code_font_google   = google_font("Fira Mono")
+)
+```
+
+class: inverse, center, middle, title-slide
+background-image: url(img/backdrop.jpg)
+background-size: cover
+
+# >_dataviz with #rstats
+<!-- <br> -->
+<!-- <img src="img/tidyverse.png" width="150px"/> -->
+<br>
+### from table into canvas
+.large[DTS X DQLab | 26 March 2021]
+
+---
+
+# Hi, I'm Aswan!
+
+.pull-left[
++ **Senior Data analyst** @ [Jabar Digital Service](https://digitalservice.jabarprov.go.id)
++ **Sensometrics specialist** @ [Sensolution.ID](https://sensolution.id)
++ Initiator of [**Komunitas R Indonesia**](https://t.me/GNURIndonesia)
++ R **instructor** @ [DQLab](https://dqlab.id), [R Academy Telkom University](https://dbe.telkomuniversity.ac.id/r-academy/), and some universities
++ Freelance **data analyst & visualization designer**
++ Passionate about: **Data carpentry** and **data visualization**
+
+> Twitter: @aswansyahputra_ <br>
+> Telegram: @aswansyahputra <br>
+> Email: muhammadaswansyahputra@gmail.com
+
+]
+
+.pull-right[
+
+```{r, echo = FALSE, out.width = "80%", fig.align = 'center'}
+knitr::include_graphics(path = "img/aswan.jpg")
+```
+
+]
+
+---
+class: inverse, left, bottom
+background-image: url(img/backdrop2.jpg)
+background-size: cover
+
+# Grammar of graphics
+
+---
+
+class: inverse, left, middle
+background-image: url(img/backdrop3.jpg)
+background-size: cover
+
+# "In order to `build`, first we need to deconstruct."
+
+---
+
+# Elements of graphics
+
+--
+
+.pull-left[
+
+1. *Data*
+2. *Mapping*
+3. *Statistic*
+4. *Scales*
+5. *Geometries*
+6. *Facets*
+7. *Coordinates*
+8. *Theme*
+
+]
+
+--
+
+.pull-right[
+
+```{r, echo = FALSE, out.width = "80%", fig.align = 'center'}
+knitr::include_graphics(path = "img/ggplot2.png")
+```
+
+]
+
+---
+class: inverse, left, bottom
+background-image: url(img/backdrop2.jpg)
+background-size: cover
+
+# The devil is in the detail
+
+---
+
+background-image: url(img/covid19_module.png)
+background-size: contain
+
+---
+
+background-image: url(img/a7day.png)
+background-size: cover
+
+---
+
+## COVID-19 in Jakarta
+
+.pull-left[
+
+```{r}
+library(tidyverse)
+library(lubridate)
+library(slider)
+library(scales)
+
+load("data/cov_jakarta.rda")
+```
+
+]
+
+--
+
+.pull-right[
+
+```{r}
+cov_jakarta
+```
+
+]
+
+---
+
+```{r cleaning01, include = FALSE}
+cov_jakarta_a7 <- cov_jakarta %>% 
+  transmute(
+    date,
+    infected = cumsum(newcase),
+    infected_lastweek = dplyr::lag(infected, 7),
+    a7 = infected / infected_lastweek,
+    a7 = slide_dbl(a7, mean, .before = 1, .after = 1)
+  )
+
+```
+`r chunk_reveal("cleaning01", left_assign = TRUE, title = "7-th day amplification factor preparation")`
+
+---
+
+```{r viz03, include = FALSE}
+cov_jakarta_a7 %>%
+  ggplot(aes(date, a7)) +
+  geom_col(fill = "#136F63", alpha = 0.8, colour = "#136F63") +
+  geom_hline(yintercept = 1, colour = "#D72638", type = "dashed") +
+  scale_x_date(
+    breaks = "1 month",
+    labels = label_date(format = "%b"),
+    expand = c(0.005, 0.005)
+  ) +
+  labs(
+    x = NULL,
+    y = "A7",
+    title = "Silent transmission in Jakarta",
+    subtitle = "Red line segment indicates 7-day period",
+    caption = "Data source: covid.19.go.id"
+  ) +
+  theme_xaringan() +
+  theme(
+    panel.grid.major.x =  element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.text.x = element_text(size = rel(0.5))
+  )
+```
+
+`r chunk_reveal("viz03", title = "7-th day amplification factor visualization")`
+
+---
+
+```{r pre-viz04, include = FALSE}
+cov_jakarta_a7_plot <- 
+  cov_jakarta_a7 %>%
+  ggplot(aes(date, a7)) +
+   geom_col(fill = "#136F63", alpha = 0.8, colour = "#136F63") +
+  geom_hline(yintercept = 1, colour = "#D72638", type = "dashed") +
+  scale_x_date(
+    breaks = "1 month",
+    labels = label_date(format = "%b"),
+    expand = c(0.005, 0.005)
+  ) +
+  labs(
+    x = NULL,
+    y = "A7",
+    title = "Silent transmission in Jakarta",
+    subtitle = "Red line segment indicates 7-day period",
+    caption = "Data source: covid.19.go.id"
+  ) +
+  theme_xaringan() +
+  theme(
+    panel.grid.major.x =  element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.text.x = element_text(size = rel(0.5))
+  )
+```
+
+```{r viz04, include = FALSE}
+cov_jakarta_a7_plot +
+  annotate(
+    geom = "label",
+    x = min(cov_jakarta$date),
+    y = 1,
+    label = "A7 = 1.0",
+    fontface = "italic",
+    size = 4,
+    colour = "#D72638",
+    alpha = 0.8
+  ) +
+  geom_curve(
+    x = as.Date("2020-04-16"),
+    xend = as.Date("2020-04-9"),
+    y = 5,
+    yend = subset(cov_jakarta_a7, date == "2020-04-9")$a7,
+    arrow = arrow(length = unit(0.07, "inch")),
+    size = 0.025,
+    color = "gray40",
+    curvature = 0.3
+  ) +
+  annotate(
+    geom = "label",
+    x = as.Date("2020-04-16"),
+    y = 5,
+    label = "First PSBB\n(9 April)",
+    size = 5,
+    colour = "gray30",
+    alpha = 1
+  )
+```
+
+`r chunk_reveal("viz04", title = "Adding annotation (1)")`
+
+---
+
+```{r pre-viz05, include = FALSE}
+cov_jakarta_a7_plot <- 
+  cov_jakarta_a7_plot +
+  annotate(
+    geom = "label",
+    x = min(cov_jakarta$date),
+    y = 1,
+    label = "A7 = 1.0",
+    fontface = "italic",
+    size = 4,
+    colour = "#D72638",
+    alpha = 0.8
+  ) +
+  geom_curve(
+    x = as.Date("2020-04-16"),
+    xend = as.Date("2020-04-9"),
+    y = 5,
+    yend = subset(cov_jakarta_a7, date == "2020-04-9")$a7,
+    arrow = arrow(length = unit(0.07, "inch")),
+    size = 0.025,
+    color = "gray40",
+    curvature = 0.3
+  ) +
+  annotate(
+    geom = "label",
+    x = as.Date("2020-04-16"),
+    y = 5,
+    label = "First PSBB\n(9 April)",
+    size = 5,
+    colour = "gray30",
+    alpha = 1
+  )
+```
+
+```{r viz05, include = FALSE}
+cov_jakarta_a7_plot +
+ annotate(
+    geom = "text",
+    x = as.Date("2020-08-31"),
+    y = 12,
+    label = str_wrap("A7 is the ratio of total confirmed COVID-19 infections between 2 points seven day apart, using 3-day rolling average. An A7 over 1.0 indicates an incident of virus transmission from 'silent carrier' around 7 days ago."),
+    fontface = "italic",
+    size = 3.5,
+    colour = "gray30"
+  ) +
+  geom_segment(
+    x = as.Date("2020-04-9"),
+    xend = as.Date("2020-04-9") + 7,
+    y = 2,
+    yend = 2,
+    arrow = arrow(length = unit(0.05, "inch"), type = "closed", ends = "both"),
+    size = 0.025,
+    colour = "#D72638"
+  ) +
+  coord_cartesian(clip = "off")
+```
+
+`r chunk_reveal("viz05", title = "Adding annotation (2)")`
+
+---
+
+class: inverse, left, bottom
+background-image: url(img/backdrop2.jpg)
+background-size: cover
+
+# Some practical tips
+
+---
+
+background-image: url(img/coolors.png)
+background-size: contain
+
+---
+
+background-image: url(img/vizpalette.png)
+background-size: contain
+
+---
+
+background-image: url(img/fontjoy.png)
+background-size: contain
+
+---
+class: left, bottom
+background-image: url(img/susielu_emmys.png)
+background-size: cover
+
+# Learn from re-viz, demo time!
+
+---
+class: inverse, center, middle
+background-image: url(img/backdrop.jpg)
+background-size: cover
+
+# Thank you!
+<!-- <br> -->
+<img src="img/aswan_circle.png" width="150px"/>
+<br>
+### Contact me!
+.large[muhammadaswansyahputra@gmail.com]
+
+```{css, eval = TRUE, echo = FALSE}
+.remark-code{line-height: 1.5; font-size: 80%}
+
+@media print {
+  .has-continuation {
+    display: block;
+  }
+}
+```
